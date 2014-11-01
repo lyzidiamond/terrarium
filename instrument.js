@@ -19,7 +19,7 @@ function instrument(str, tick) {
     // here is async - _UPDATE() can be called later on by anything that
     // calls INSTRUMENT(), but we call it here just in case all code
     // is sync.
-    .join('\n') + '\n;window.top._UPDATE(' + tick + ');';
+    .join('\n') + '\n;window.top._UPDATE("' + tick + '");';
 
   function rewriteLine(line, i) {
     if (line.match(/\/\/=/)) {

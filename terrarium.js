@@ -16,18 +16,28 @@ function Terrarium() {
 util.inherits(Terrarium, EventEmitter);
 
 Terrarium.prototype.run = function(source) {
-  var instrumented = instrument(source),
-    html = '<!DOCTYPE html><html><head></head><body><script>' +
+  var instrumented = instrument(source, this.name),
+    html = '<!DOCTYPE html><html><head></head><body>' +
+      '<script>window.onerror = function(e) { window.top.ERROR(e); }</script>' +
+      '<script>' +
       instrumented.result + '</script></body></html>',
     blob = new Blob([html], { encoding: 'UTF-8', type: 'text/html' }),
     targetUrl = U.createObjectURL(blob);
 
   this.iframe.addEventListener('load', function() {
-    this.iframe.contentWindow.run();
+    if (this.iframe.contentWindow.run) this.iframe.contentWindow.run();
   }.bind(this));
 
   this.setInstrument(this.name, instrumented);
   this.iframe.src = targetUrl;
+};
+
+Terrarium.prototype.destroy = function() {
+  this.iframe.parentNode.removeChild(this.iframe);
+  delete this.context;
+  delete this.name;
+  delete window.INSTRUMENT;
+  delete window._UPDATE;
 };
 
 Terrarium.prototype.setInstrument = function(thisTick, instrumented) {
@@ -51,6 +61,10 @@ Terrarium.prototype.setInstrument = function(thisTick, instrumented) {
     }
     _UPDATE(thisTick);
   };
+
+  window.ERROR = function(e) {
+    this.emit('err', e);
+  }.bind(this);
 
   window._UPDATE = function(tick) {
     if (tick !== thisTick) return;
