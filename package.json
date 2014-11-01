@@ -1,0 +1,22 @@
+{
+  "name": "terrarium",
+  "version": "1.0.0",
+  "description": "a non-secure but pretty useful sandbox for running javascript code in a browser",
+  "main": "index.js",
+  "scripts": {
+    "test": "watchify test.js -o bundle.js & serve"
+  },
+  "keywords": [
+    "sandbox",
+    "javascript",
+    "browser"
+  ],
+  "author": "Tom MacWright",
+  "license": "ISC",
+  "devDependencies": {
+    "tape": "^3.0.1",
+    "watchify": "^2.1.0"
+  },
+  "dependencies": {
+  }
+}
