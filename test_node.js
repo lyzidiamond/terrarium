@@ -1,8 +1,8 @@
 var test = require('tape'),
-Terrarium = require('./');
+  T = require('./');
 
-test('Terrarium', function(t) {
-  var terrarium = new Terrarium();
+test('Terrarium - Node', function(t) {
+  var terrarium = new T.Node();
   t.ok(terrarium);
 
   terrarium.on('data', function(d) {
