@@ -7,6 +7,10 @@ test('Terrarium - Node', function(t) {
 
   terrarium.on('data', function(d) {
     t.equal(d['1:0'][0].val, 1, 'emits the correct data');
+  });
+
+  terrarium.on('end', function(d) {
+    terrarium.destroy();
     t.end();
   });
 

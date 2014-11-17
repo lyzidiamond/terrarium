@@ -46,6 +46,10 @@ Terrarium.prototype.run = function(source) {
       this.update();
     }
   }.bind(this));
+
+  this.child.on('exit', function(d) {
+    this.emit('end');
+  }.bind(this));
 };
 
 Terrarium.prototype.update = function() {
@@ -54,6 +58,7 @@ Terrarium.prototype.update = function() {
 
 Terrarium.prototype.destroy = function() {
   this.child.kill();
+  if (fs.existsSync(TMP)) fs.unlinkSync(TMP);
 };
 
 module.exports = Terrarium;
