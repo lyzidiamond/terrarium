@@ -15,7 +15,7 @@ util.inherits(Terrarium, EventEmitter);
 Terrarium.prototype.run = function(source) {
   var instrumentedSource = instrument(source);
   fs.writeFileSync(TMP, instrumentedSource.result);
-  this.child = child_process.fork(TMP);
+  this.child = child_process.fork(TMP, { silent: true });
 
   this.DATA = {};
   var DATA = this.DATA;
@@ -45,6 +45,10 @@ Terrarium.prototype.run = function(source) {
     } else if (d.type === 'update') {
       this.update();
     }
+  }.bind(this));
+
+  this.child.stderr.on('data', function(d) {
+    this.emit('err', { error: d });
   }.bind(this));
 
   this.child.on('exit', function(d) {
