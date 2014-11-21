@@ -42,8 +42,6 @@ Terrarium.prototype.run = function(source) {
         if (!TODO[k]) return;
       }
       this.update();
-    } else if (d.type === 'update') {
-      this.update();
     }
   }.bind(this));
 

@@ -1,5 +1,7 @@
 # terrarium
 
+[![build status](https://secure.travis-ci.org/tmcw/terrarium.png)](http://travis-ci.org/tmcw/terrarium)
+
 Terrarium is a sandbox for running JavaScript code with
 instrumentation. It's designed for interactive, learnable programming
 environments, but architecturally is more similar to code coverage tools.

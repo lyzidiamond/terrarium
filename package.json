@@ -4,8 +4,8 @@
   "description": "a non-secure but pretty useful sandbox for running javascript code in a browser",
   "main": "terrarium.js",
   "scripts": {
-    "test": "watchify test_browser.js -o bundle.js & serve",
-    "test-node": "node test_node.js"
+    "test-browser": "watchify test_browser.js -o bundle.js & serve",
+    "test": "node test_node.js"
   },
   "keywords": [
     "sandbox",
