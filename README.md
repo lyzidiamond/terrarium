@@ -35,4 +35,8 @@ t.destroy(); // shut down
 
 ## FAQ
 
-* **Why not vm.runInContext**: this was the previous approach. Terrarium now uses a child process because this allows it to bind to ports and effectively cancel listeners on close.
+* **Why not vm.runInContext**: this was the previous approach. Terrarium now uses
+  a child process because this allows it to bind to ports and effectively cancel listeners on close.
+* **Why not eval()**: eval doesn't provide variable sandboxing, so it's easy to
+  overwrite existing variables on your page. It also doesn't allow you to control
+  timers.

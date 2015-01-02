@@ -18,5 +18,9 @@
     "tape": "^3.0.1",
     "watchify": "^2.1.0"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:tmcw/terrarium.git"
+  }
 }
