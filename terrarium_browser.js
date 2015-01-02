@@ -2,6 +2,8 @@ var instrument = require('./instrument');
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
 
+// Running Terrarium in browsers: this creates an iframe temporarily
+// and fills it with a page that just runs JavaScript.
 function Terrarium() {
   EventEmitter.call(this);
   this.name = 'frame-' + Date.now().toString(16);

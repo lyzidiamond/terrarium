@@ -1,5 +1,5 @@
 var test = require('tape'),
-  T = require('./');
+  T = require('../');
 
 test('Terrarium - Node', function(t) {
   var terrarium = new T.Node();
@@ -18,7 +18,23 @@ test('Terrarium - Node', function(t) {
   t.ok(terrarium.child, 'has child');
 });
 
-test('Terrarium - Node Error', function(t) {
+test('Terrarium - SyntaxError', function(t) {
+  var terrarium = new T.Node();
+  t.ok(terrarium, 'is initialized');
+
+  terrarium.on('err', function(d) {
+    t.ok(d.error, 'emits an error');
+  });
+
+  terrarium.on('end', function(d) {
+    terrarium.destroy();
+    t.end();
+  });
+
+  terrarium.run('/');
+});
+
+test('Terrarium - ReferenceError', function(t) {
   var terrarium = new T.Node();
   t.ok(terrarium, 'is initialized');
 

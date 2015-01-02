@@ -1,5 +1,5 @@
 var test = require('tape'),
-  T = require('./');
+  T = require('../');
 
 test('Terrarium - Browser', function(t) {
   var terrarium = new T.Browser();
