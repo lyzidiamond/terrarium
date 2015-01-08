@@ -9,13 +9,16 @@ function createObjectURL(blob) {
 
 // Running Terrarium in browsers: this creates an iframe temporarily
 // and fills it with a page that just runs JavaScript.
-function Terrarium() {
+function Terrarium(options) {
   EventEmitter.call(this);
   this.name = 'frame-' + Date.now().toString(16);
   this.iframe = document.body.appendChild(document.createElement('iframe'));
   this.iframe.setAttribute('name', this.name);
   this.iframe.style.display = 'none';
   this.context = window[this.name];
+  if (options && options.sandbox) {
+    this.sandbox = options.sandbox;
+  } else { this.sandbox = {}; }
 }
 
 util.inherits(Terrarium, EventEmitter);
@@ -34,6 +37,10 @@ Terrarium.prototype.run = function(source) {
 
     this.iframe.addEventListener('load', function() {
       try {
+        for (var k in this.sandbox) {
+          console.log(this.sandbox);
+          this.iframe.contentWindow[k] = this.sandbox[k];
+        }
         if (this.iframe.contentWindow.run) this.iframe.contentWindow.run();
       } catch(e) {
         this.emit('err', e);

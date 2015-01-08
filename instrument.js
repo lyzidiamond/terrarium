@@ -13,11 +13,18 @@ var esprima = require('esprima'),
  * @returns {Object}
  */
 function instrument(str, tick, type) {
-  var TODO = [];
+  var TODO = [], parsed;
+  try {
+    parsed = esprima.parse(str, {attachComment:true,loc:true});
+  } catch(e) {
+    // make esprima's errors zero-based
+    e.lineNumber--;
+    throw e;
+  }
   var transformed = escodegen.generate(
     wrapInRun(
       transform(
-        esprima.parse(str, {attachComment:true,loc:true}), type, tick, TODO), type, tick),
+        parsed, type, tick, TODO), type, tick),
         {format:{compact:true}});
   return {
     source: transformed,

@@ -36,6 +36,12 @@ behavior on separate platforms.
 
 `Terrarium.Browser` is designed to be used with [browserify](http://browserify.org/).
 
+The `Terrarium.Browser` API also accepts an options object to its constructor.
+The options include:
+
+* `sandbox`: an object of JavaScript objects to be transferred into the running
+  context.
+
 ## Example
 
 ```js
