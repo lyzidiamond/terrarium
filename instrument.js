@@ -2,9 +2,16 @@ var esprima = require('esprima'),
   escodegen = require('escodegen'),
   traverse = require('traverse');
 
-// Given a string of source code, look for our magic kind of comment
-// and transform those comments into actual code that records the value
-// of variables at a point in time.
+/**
+ * Given a string of source code, look for our magic kind of comment
+ * and transform those comments into actual code that records the value
+ * of variables at a point in time.
+ *
+ * @param {string} code input
+ * @param {string} tick
+ * @param {string} type either browser or node
+ * @returns {Object}
+ */
 function instrument(str, tick, type) {
   var TODO = [];
   var transformed = escodegen.generate(
@@ -18,90 +25,89 @@ function instrument(str, tick, type) {
   };
 }
 
+/**
+ * @return {Object} AST for error handling window.onerror code
+ */
 function setErrorHandler() {
   return {
     "type": "Program",
-    "body": [
-        {
-            "type": "ExpressionStatement",
-            "expression": {
-                "type": "AssignmentExpression",
-                "operator": "=",
-                "left": {
+    "body": [{
+      "type": "ExpressionStatement",
+      "expression": {
+        "type": "AssignmentExpression",
+        "operator": "=",
+        "left": {
+          "type": "MemberExpression",
+          "computed": false,
+          "object": {
+            "type": "Identifier",
+            "name": "window"
+          },
+          "property": {
+            "type": "Identifier",
+            "name": "onerror"
+          }
+        },
+        "right": {
+          "type": "FunctionExpression",
+          "id": null,
+          "params": [
+            {
+            "type": "Identifier",
+            "name": "e"
+          }
+          ],
+          "defaults": [],
+          "body": {
+            "type": "BlockStatement",
+            "body": [
+              {
+              "type": "ExpressionStatement",
+              "expression": {
+                "type": "CallExpression",
+                "callee": {
+                  "type": "MemberExpression",
+                  "computed": false,
+                  "object": {
                     "type": "MemberExpression",
                     "computed": false,
                     "object": {
-                        "type": "Identifier",
-                        "name": "window"
+                      "type": "Identifier",
+                      "name": "window"
                     },
                     "property": {
-                        "type": "Identifier",
-                        "name": "onerror"
+                      "type": "Identifier",
+                      "name": "top"
                     }
+                  },
+                  "property": {
+                    "type": "Identifier",
+                    "name": "ERROR"
+                  }
                 },
-                "right": {
-                    "type": "FunctionExpression",
-                    "id": null,
-                    "params": [
-                        {
-                            "type": "Identifier",
-                            "name": "e"
-                        }
-                    ],
-                    "defaults": [],
-                    "body": {
-                        "type": "BlockStatement",
-                        "body": [
-                            {
-                                "type": "ExpressionStatement",
-                                "expression": {
-                                    "type": "CallExpression",
-                                    "callee": {
-                                        "type": "MemberExpression",
-                                        "computed": false,
-                                        "object": {
-                                            "type": "MemberExpression",
-                                            "computed": false,
-                                            "object": {
-                                                "type": "Identifier",
-                                                "name": "window"
-                                            },
-                                            "property": {
-                                                "type": "Identifier",
-                                                "name": "top"
-                                            }
-                                        },
-                                        "property": {
-                                            "type": "Identifier",
-                                            "name": "ERROR"
-                                        }
-                                    },
-                                    "arguments": [
-                                        {
-                                            "type": "Identifier",
-                                            "name": "e"
-                                        }
-                                    ]
-                                }
-                            },
-                            {
-                                "type": "ReturnStatement",
-                                "argument": {
-                                    "type": "Literal",
-                                    "value": true,
-                                    "raw": "true"
-                                }
-                            }
-                        ]
-                    },
-                    "rest": null,
-                    "generator": false,
-                    "expression": false
-                }
-            }
+                "arguments": [
+                  {
+                  "type": "Identifier",
+                  "name": "e"
+                }]
+              }
+            },
+            {
+              "type": "ReturnStatement",
+              "argument": {
+                "type": "Literal",
+                "value": true,
+                "raw": "true"
+              }
+            }]
+          },
+          "rest": null,
+          "generator": false,
+          "expression": false
         }
-    ]
-}
+      }
+    }]
+  };
 }
 
 function instrumentName(comment, type, tick) {
@@ -194,6 +200,12 @@ function transform(code, type, tick, TODO) {
   return code;
 }
 
+/**
+ * @param {Object} AST of existing code
+ * @param {string} type of backend
+ * @param {string} tick of run evaluation
+ * @return {Object} AST
+ */
 function wrapInRun(code, type, tick) {
   return type === 'node' ? code : {
     "type": "Program",
