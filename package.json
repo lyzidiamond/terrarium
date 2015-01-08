@@ -5,7 +5,7 @@
   "main": "terrarium.js",
   "scripts": {
     "test-browser": "watchify test_browser.js -o bundle.js & serve",
-    "test": "node test_node.js"
+    "test": "node test/node.js && browserify test/browser.js | tap-closer | smokestack -b firefox"
   },
   "keywords": [
     "sandbox",
@@ -15,10 +15,18 @@
   "author": "Tom MacWright",
   "license": "ISC",
   "devDependencies": {
+    "browserify": "^8.0.3",
     "tape": "^3.0.1",
     "watchify": "^2.1.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "acorn": "^0.11.0",
+    "escodegen": "^1.4.3",
+    "esprima": "^1.2.2",
+    "smokestack": "^3.0.0",
+    "tap-closer": "^1.0.0",
+    "traverse": "^0.6.6"
+  },
   "repository": {
     "type": "git",
     "url": "git@github.com:tmcw/terrarium.git"

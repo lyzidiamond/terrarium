@@ -2,6 +2,13 @@ var instrument = require('./instrument');
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
 
+function createObjectURL(blob) {
+  var U = typeof URL !== 'undefined' ? URL : webkitURL;
+  return U.createObjectURL(blob);
+}
+
+// Running Terrarium in browsers: this creates an iframe temporarily
+// and fills it with a page that just runs JavaScript.
 function Terrarium() {
   EventEmitter.call(this);
   this.name = 'frame-' + Date.now().toString(16);
@@ -14,21 +21,33 @@ function Terrarium() {
 util.inherits(Terrarium, EventEmitter);
 
 Terrarium.prototype.run = function(source) {
-  var U = typeof URL !== 'undefined' ? URL : webkitURL;
-  var instrumented = instrument(source, this.name),
-    html = '<!DOCTYPE html><html><head></head><body>' +
-      '<script>window.onerror = function(e) { window.top.ERROR(e); }</script>' +
-      '<script>' +
-      instrumented.result + '</script></body></html>',
-    blob = new Blob([html], { encoding: 'UTF-8', type: 'text/html' }),
-    targetUrl = U.createObjectURL(blob);
+  try {
+    var instrumented = instrument(source, this.name, 'browser');
+    var html = '<!DOCTYPE html><html><head></head><body>' +
+        '<script>window.onerror = function(e) { window.top.ERROR(e); }</script>' +
+        '<script>' +
+        instrumented.source + '</script></body></html>',
+      blob = new Blob([html], { encoding: 'UTF-8', type: 'text/html' }),
+      targetUrl = createObjectURL(blob);
 
-  this.iframe.addEventListener('load', function() {
-    if (this.iframe.contentWindow.run) this.iframe.contentWindow.run();
-  }.bind(this));
+    this.setInstrument(this.name, instrumented);
 
-  this.setInstrument(this.name, instrumented);
-  this.iframe.src = targetUrl;
+    this.iframe.addEventListener('load', function() {
+      try {
+        if (this.iframe.contentWindow.run) this.iframe.contentWindow.run();
+      } catch(e) {
+        this.emit('err', e);
+        this.emit('end');
+      }
+    }.bind(this));
+
+    this.iframe.src = targetUrl;
+  } catch(e) {
+    // the call to instrument() can throw a SyntaxError.
+    this.emit('err', e);
+    this.emit('end');
+  }
+  return this;
 };
 
 Terrarium.prototype.destroy = function() {
@@ -44,28 +63,34 @@ Terrarium.prototype.setInstrument = function(thisTick, instrumented) {
   var start = Date.now();
   var TODO = instrumented.TODO;
 
-  window.INSTRUMENT = function(name, number, val) {
-    if (DATA[name + ':' + number] === undefined) {
-      DATA[name + ':' + number] = [];
+  window.INSTRUMENT = function(d) {
+    if (d && d.type === 'instrument') {
+      var name = d.name,
+        number = d.lineNumber,
+        val = d.value;
+
+      if (DATA[name + ':' + number] === undefined) {
+        DATA[name + ':' + number] = [];
+      }
+      DATA[name + ':' + number].unshift({
+        name: name,
+        line: number,
+        val: val,
+        when: Date.now() - start
+      });
+      TODO[name + ':' + number] = true;
+      for (var k in TODO) {
+        if (!TODO[k]) return;
+      }
+      window.UPDATE(thisTick);
     }
-    DATA[name + ':' + number].unshift({
-      name: name,
-      line: number,
-      val: val,
-      when: Date.now() - start
-    });
-    TODO[name + ':' + number] = true;
-    for (var k in TODO) {
-      if (!TODO[k]) return;
-    }
-    _UPDATE(thisTick);
   };
 
   window.ERROR = function(e) {
     this.emit('err', e);
   }.bind(this);
 
-  window._UPDATE = function(tick) {
+  window.UPDATE = function(tick) {
     if (tick !== thisTick) return;
     this.emit('data', DATA);
   }.bind(this);
