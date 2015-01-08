@@ -38,7 +38,6 @@ Terrarium.prototype.run = function(source) {
     this.iframe.addEventListener('load', function() {
       try {
         for (var k in this.sandbox) {
-          console.log(this.sandbox);
           this.iframe.contentWindow[k] = this.sandbox[k];
         }
         if (this.iframe.contentWindow.run) this.iframe.contentWindow.run();
