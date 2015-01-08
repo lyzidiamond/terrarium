@@ -5,7 +5,7 @@
   "main": "terrarium.js",
   "scripts": {
     "test-browser": "watchify test_browser.js -o bundle.js & serve",
-    "test": "node test/node.js && browserify test/browser.js | tap-closer | smokestack"
+    "test": "node test/node.js && browserify test/browser.js | tap-closer | smokestack -b firefox"
   },
   "keywords": [
     "sandbox",
