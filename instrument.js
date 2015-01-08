@@ -114,6 +114,10 @@ function instrumentName(comment, type, tick) {
   return comment.value + ':' + comment.loc.start.line;
 }
 
+function isInstrumentComment(comment) {
+  return comment.value.indexOf('=') === 0;
+}
+
 function instrumentCall(comment, type, tick) {
   var value = comment.value.replace(/^=/, '');
   var parsedComment = esprima.parse('a(' + value + ')').body[0].expression.arguments;
@@ -166,7 +170,7 @@ function transform(code, type, tick, TODO) {
         for (j = 0; j < node[i].leadingComments.length; j++) {
           comment = node[i].leadingComments[j];
           id = comment.range.join('-');
-          if (!coveredComments[id]) {
+          if (!coveredComments[id] && isInstrumentComment(comment)) {
             pp(insertions, i, instrumentCall(comment, type, tick));
             TODO.push(instrumentName(comment));
             coveredComments[id] = true;
@@ -177,7 +181,7 @@ function transform(code, type, tick, TODO) {
         for (j = 0; j < node[i].trailingComments.length; j++) {
           comment = node[i].trailingComments[j];
           id = comment.range.join('-');
-          if (!coveredComments[id]) {
+          if (!coveredComments[id] && isInstrumentComment(comment)) {
             pp(insertions, i + 1, instrumentCall(comment, type, tick));
             TODO.push(instrumentName(comment));
             coveredComments[id] = true;

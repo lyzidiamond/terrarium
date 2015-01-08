@@ -1,0 +1,1 @@
+window.onerror=function(e){window.top.ERROR(e);return true;};window.run=function(){var x=10;window.top.INSTRUMENT({type:'instrument',lineNumber:2,name:'x',value:x});};

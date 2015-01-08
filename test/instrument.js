@@ -1,10 +1,27 @@
 var test = require('tape'),
+  fs = require('fs'),
   instrument = require('../instrument');
+
+function fixture(t, name) {
+  var input = fs.readFileSync(__dirname + '/fixture/' + name + '.js');
+  var nodeOutput = instrument(input, 0, 'node');
+  var browserOutput = instrument(input, 0, 'browser');
+  var nodePath = __dirname + '/fixture/' + name + '.js.node';
+  var browserPath = __dirname + '/fixture/' + name + '.js.browser';
+  if (process.env.UPDATE) {
+    fs.writeFileSync(nodePath, nodeOutput.source);
+    fs.writeFileSync(browserPath, browserOutput.source);
+  }
+  t.equal(nodeOutput.source, fs.readFileSync(nodePath, 'utf8'), name + ' node');
+  t.equal(browserOutput.source, fs.readFileSync(browserPath, 'utf8'), name + ' browser');
+}
 
 test('instrument', function(t) {
   t.test('empty', function(t) {
-    t.equal(instrument('', 0, 'node').source, '');
-    t.equal(instrument('', 0, 'browser').source, 'window.onerror=function(e){window.top.ERROR(e);return true;};window.run=function(){};');
+    fixture(t, 'empty');
+    fixture(t, 'expression');
+    fixture(t, 'comment');
+    fixture(t, 'comment_undefined');
     t.end();
   });
 
