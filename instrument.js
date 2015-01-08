@@ -5,37 +5,141 @@ var esprima = require('esprima'),
 // Given a string of source code, look for our magic kind of comment
 // and transform those comments into actual code that records the value
 // of variables at a point in time.
-function instrument(str, tick) {
+function instrument(str, tick, type) {
   var TODO = [];
   var transformed = escodegen.generate(
     wrapInRun(
       transform(
-        esprima.parse(str, {attachComment:true,loc:true}), TODO)), {format:{compact:true}});
-
-  return transformed;
+        esprima.parse(str, {attachComment:true,loc:true}), type, tick, TODO), type, tick),
+        {format:{compact:true}});
+  return {
+    source: transformed,
+    TODO: TODO
+  };
 }
 
-function updateCall(comment) {
+function setErrorHandler() {
+  return {
+    "type": "Program",
+    "body": [
+        {
+            "type": "ExpressionStatement",
+            "expression": {
+                "type": "AssignmentExpression",
+                "operator": "=",
+                "left": {
+                    "type": "MemberExpression",
+                    "computed": false,
+                    "object": {
+                        "type": "Identifier",
+                        "name": "window"
+                    },
+                    "property": {
+                        "type": "Identifier",
+                        "name": "onerror"
+                    }
+                },
+                "right": {
+                    "type": "FunctionExpression",
+                    "id": null,
+                    "params": [
+                        {
+                            "type": "Identifier",
+                            "name": "e"
+                        }
+                    ],
+                    "defaults": [],
+                    "body": {
+                        "type": "BlockStatement",
+                        "body": [
+                            {
+                                "type": "ExpressionStatement",
+                                "expression": {
+                                    "type": "CallExpression",
+                                    "callee": {
+                                        "type": "MemberExpression",
+                                        "computed": false,
+                                        "object": {
+                                            "type": "MemberExpression",
+                                            "computed": false,
+                                            "object": {
+                                                "type": "Identifier",
+                                                "name": "window"
+                                            },
+                                            "property": {
+                                                "type": "Identifier",
+                                                "name": "top"
+                                            }
+                                        },
+                                        "property": {
+                                            "type": "Identifier",
+                                            "name": "ERROR"
+                                        }
+                                    },
+                                    "arguments": [
+                                        {
+                                            "type": "Identifier",
+                                            "name": "e"
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "type": "ReturnStatement",
+                                "argument": {
+                                    "type": "Literal",
+                                    "value": true,
+                                    "raw": "true"
+                                }
+                            }
+                        ]
+                    },
+                    "rest": null,
+                    "generator": false,
+                    "expression": false
+                }
+            }
+        }
+    ]
+}
+}
+
+function instrumentName(comment, type, tick) {
+  return comment.value + ':' + comment.loc.start.line;
+}
+
+function instrumentCall(comment, type, tick) {
   var value = comment.value.replace(/^=/, '');
-  var arg = esprima.parse('a(' + value + ')').body[0].expression.arguments;
-  arg.push({ type: "Literal",
-    value: comment.loc.start.line
-  });
-  arg.push({ type: "Literal", value: value });
+  var parsedComment = esprima.parse('a(' + value + ')').body[0].expression.arguments;
+  function prop(k, v, r) {
+    return {
+      "type": "Property", "kind": "init",
+      "key": { "type": "Identifier", "name": k },
+      "value": r ? v : { type: "Literal", value: v }
+    };
+  }
   return {
     "type": "ExpressionStatement",
     "expression": {
       "type": "CallExpression",
       "callee": {
         "type": "Identifier",
-        "name": "window.top.INSTRUMENT"
+        "name": type === 'node' ? 'process.send' : "window.top.INSTRUMENT"
       },
-      "arguments": arg
+      "arguments": [{
+        "type": "ObjectExpression",
+        "properties": [
+          prop('type', 'instrument'),
+          prop('lineNumber', comment.loc.start.line),
+          prop('name', value),
+          prop('value', parsedComment[0], true)
+        ]
+      }]
     }
   };
 }
 
-function transform(code) {
+function transform(code, type, tick, TODO) {
   function pp(l, k, v) { if (!l[k]) l[k] = []; l[k].push(v); }
   function pairs(o) {
     return Object.keys(o).map(function(k) { return [k, o[k]]; });
@@ -57,17 +161,19 @@ function transform(code) {
           comment = node[i].leadingComments[j];
           id = comment.range.join('-');
           if (!coveredComments[id]) {
-            pp(insertions, i, updateCall(comment));
+            pp(insertions, i, instrumentCall(comment, type, tick));
+            TODO.push(instrumentName(comment));
             coveredComments[id] = true;
           }
         }
       }
-      if (node[i].leadingComments) {
+      if (node[i].trailingComments) {
         for (j = 0; j < node[i].trailingComments.length; j++) {
           comment = node[i].trailingComments[j];
           id = comment.range.join('-');
           if (!coveredComments[id]) {
-            pp(insertions, i + 1, updateCall(comment));
+            pp(insertions, i + 1, instrumentCall(comment, type, tick));
+            TODO.push(instrumentName(comment));
             coveredComments[id] = true;
           }
         }
@@ -88,11 +194,10 @@ function transform(code) {
   return code;
 }
 
-function wrapInRun(code) {
-  return {
+function wrapInRun(code, type, tick) {
+  return type === 'node' ? code : {
     "type": "Program",
-    "body": [
-      {
+    "body": [setErrorHandler(), {
       "type": "ExpressionStatement",
       "expression": {
         "type": "AssignmentExpression",
@@ -121,8 +226,7 @@ function wrapInRun(code) {
           "expression": false
         }
       }
-    }
-    ]
+    }]
   };
 }
 

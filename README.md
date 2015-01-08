@@ -16,7 +16,7 @@ behavior on separate platforms.
 * **Browser** runs code in a web browser by using an `iframe` and calling functions in `window.top`
 * **Node** runs code in a subprocess by using [.fork](http://nodejs.org/api/child_process.html#child_process_child_process_fork_modulepath_args_options) and calling `process.send`
 
-`Terrarium.Browser` is designed to be used with browserify.
+`Terrarium.Browser` is designed to be used with [browserify](http://browserify.org/).
 
 ## Example
 
