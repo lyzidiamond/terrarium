@@ -15,6 +15,7 @@
   "author": "Tom MacWright",
   "license": "ISC",
   "devDependencies": {
+    "browserify": "^8.0.3",
     "tape": "^3.0.1",
     "watchify": "^2.1.0"
   },
