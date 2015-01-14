@@ -19,8 +19,12 @@
     "tape": "^3.0.1",
     "watchify": "^2.1.0"
   },
+  "browser": {
+    "btoa": false
+  },
   "dependencies": {
     "acorn": "^0.11.0",
+    "btoa": "^1.1.2",
     "escodegen": "^1.4.3",
     "esprima": "^1.2.2",
     "smokestack": "^3.0.0",
