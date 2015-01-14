@@ -2,6 +2,13 @@ var esprima = require('esprima'),
   escodegen = require('escodegen'),
   traverse = require('traverse');
 
+var btoa;
+if (!process.browser) {
+  btoa = require('btoa');
+} else {
+  btoa = window.btoa;
+}
+
 /**
  * Given a string of source code, look for our magic kind of comment
  * and transform those comments into actual code that records the value
@@ -15,7 +22,11 @@ var esprima = require('esprima'),
 function instrument(str, tick, type) {
   var TODO = [], parsed;
   try {
-    parsed = esprima.parse(str, {attachComment:true,loc:true});
+    parsed = esprima.parse(str, {
+      attachComment: true,
+      source: 'main.js',
+      loc: true
+    });
   } catch(e) {
     // make esprima's errors zero-based
     e.lineNumber--;
@@ -25,9 +36,16 @@ function instrument(str, tick, type) {
     wrapInRun(
       transform(
         parsed, type, tick, TODO), type, tick),
-        {format:{compact:true}});
+        {
+          sourceMap: true,
+          sourceMapWithCode: true,
+          format: {
+            compact: true
+          }
+        });
+  var map = '\n//# sourceMappingURL=data:application/json;base64,' + btoa(transformed.map.toString());
   return {
-    source: transformed,
+    source: transformed.code + map,
     TODO: TODO
   };
 }
