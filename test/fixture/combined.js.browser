@@ -1,0 +1,22 @@
+window.onerror = function (e) {
+    window.top.ERROR(e);
+    return true;
+};
+window.run = function () {
+    var result = addTwoNumbers(10, 32);
+    window.top.INSTRUMENT({
+        type: 'instrument',
+        lineNumber: 2,
+        name: 'result',
+        value: result
+    });
+    setInterval(function () {
+        var d = new Date();
+        window.top.INSTRUMENT({
+            type: 'instrument',
+            lineNumber: 6,
+            name: 'd',
+            value: d
+        });
+    }, 1000);
+};

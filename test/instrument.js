@@ -22,6 +22,10 @@ test('instrument', function(t) {
     fixture(t, 'expression');
     fixture(t, 'comment');
     fixture(t, 'comment_undefined');
+    fixture(t, 'bare');
+    fixture(t, 'timeout');
+    fixture(t, 'interval');
+    fixture(t, 'combined');
     t.end();
   });
 

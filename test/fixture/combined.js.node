@@ -1,0 +1,16 @@
+var result = addTwoNumbers(10, 32);
+process.send({
+    type: 'instrument',
+    lineNumber: 2,
+    name: 'result',
+    value: result
+});
+setInterval(function () {
+    var d = new Date();
+    process.send({
+        type: 'instrument',
+        lineNumber: 6,
+        name: 'd',
+        value: d
+    });
+}, 1000);

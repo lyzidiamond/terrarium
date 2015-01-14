@@ -1,0 +1,9 @@
+setInterval(function () {
+    var d = new Date();
+    process.send({
+        type: 'instrument',
+        lineNumber: 3,
+        name: 'd',
+        value: d
+    });
+}, 1000);

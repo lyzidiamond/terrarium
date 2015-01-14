@@ -1,0 +1,9 @@
+setTimeout(function () {
+    var x = 10;
+    process.send({
+        type: 'instrument',
+        lineNumber: 3,
+        name: 'x',
+        value: x
+    });
+}, 100);

@@ -1,0 +1,6 @@
+process.send({
+    type: 'instrument',
+    lineNumber: 1,
+    name: '10',
+    value: 10
+});

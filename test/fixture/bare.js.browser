@@ -3,11 +3,10 @@ window.onerror = function (e) {
     return true;
 };
 window.run = function () {
-    var x = 10;
     window.top.INSTRUMENT({
         type: 'instrument',
-        lineNumber: 2,
-        name: 'x',
-        value: x
+        lineNumber: 1,
+        name: '10',
+        value: 10
     });
 };

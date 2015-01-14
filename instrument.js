@@ -24,8 +24,7 @@ function instrument(str, tick, type) {
   var transformed = escodegen.generate(
     wrapInRun(
       transform(
-        parsed, type, tick, TODO), type, tick),
-        {format:{compact:true}});
+        parsed, type, tick, TODO), type, tick));
   return {
     source: transformed,
     TODO: TODO
@@ -155,27 +154,23 @@ function instrumentCall(comment, type, tick) {
     }
   };
 }
+function pairs(o) { return Object.keys(o).map(function(k) { return [k, o[k]]; }); }
+function values(o) { return pairs(o).map(function(k) { return k[1]; }); }
 
 function transform(code, type, tick, TODO) {
   function pp(l, k, v) { if (!l[k]) l[k] = []; l[k].push(v); }
-  function pairs(o) {
-    return Object.keys(o).map(function(k) { return [k, o[k]]; });
-  }
   // walks through the source tree, though we're only going to touch
   // things with 'body', which means function bodies and the main
   // source.
   traverse(code).forEach(function(node) {
-    var j, i, comment, id;
-    if (this.key !== 'body') return;
-    var coveredComments = {};
-    var nextValue = node;
-    var insertions = {};
-    for (i = 0; i < node.length; i++) {
+    var comment, id, coveredComments = {}, insertions = {};
+    function instrumentComments(node, i) {
+      var j;
       // a comment can be both leading & trailing, so we keep this
       // coveredComments object to avoid double-logging it.
-      if (node[i].leadingComments) {
-        for (j = 0; j < node[i].leadingComments.length; j++) {
-          comment = node[i].leadingComments[j];
+      if (node.leadingComments) {
+        for (j = 0; j < node.leadingComments.length; j++) {
+          comment = node.leadingComments[j];
           id = comment.range.join('-');
           if (!coveredComments[id] && isInstrumentComment(comment)) {
             pp(insertions, i, instrumentCall(comment, type, tick));
@@ -184,9 +179,9 @@ function transform(code, type, tick, TODO) {
           }
         }
       }
-      if (node[i].trailingComments) {
-        for (j = 0; j < node[i].trailingComments.length; j++) {
-          comment = node[i].trailingComments[j];
+      if (node.trailingComments) {
+        for (j = 0; j < node.trailingComments.length; j++) {
+          comment = node.trailingComments[j];
           id = comment.range.join('-');
           if (!coveredComments[id] && isInstrumentComment(comment)) {
             pp(insertions, i + 1, instrumentCall(comment, type, tick));
@@ -196,17 +191,35 @@ function transform(code, type, tick, TODO) {
         }
       }
     }
-    // inserting things in places is hard with arrays, since when you
-    // push something into i, it changes the positions of other stuff.
-    // we avoid this problem by
-    // 1: doing batch insertions with splice
-    // 2: iterating backwards
-    insertions = pairs(insertions);
-    insertions.sort(function(a, b) { return b[0] - a[0]; });
-    for (var k = 0; k < insertions.length; k++) {
-      nextValue.splice.apply(nextValue, [+insertions[k][0], 0].concat(insertions[k][1]));
+
+    if (this.key === 'body') {
+      var nextValue = traverse.clone(node);
+      for (var k = 0; k < node.length; k++) {
+        instrumentComments(node[k], k);
+      }
+      // inserting things in places is hard with arrays, since when you
+      // push something into i, it changes the positions of other stuff.
+      // we avoid this problem by
+      // 1: doing batch insertions with splice
+      // 2: iterating backwards
+      insertions = pairs(insertions);
+      insertions.sort(function(a, b) { return b[0] - a[0]; });
+      for (var m = 0; m < insertions.length; m++) {
+        nextValue.splice.apply(nextValue, [+insertions[m][0], 0].concat(insertions[m][1]));
+      }
+      this.update(nextValue);
+    } else if (node && node.type === 'Program' && node.body.length === 0) {
+      // a bare program consisting only of comments falls into this ditch:
+      // instead of having a body, it just has comments, so we need to
+      // look for them here.
+      instrumentComments(node, 0);
+      insertions = pairs(insertions);
+      insertions.sort(function(a, b) { return b[0] - a[0]; });
+      if (insertions.length) {
+        node.body = insertions.map(function(i) { return i[1][0]; });
+        this.update(node);
+      }
     }
-    this.update(nextValue);
   });
   return code;
 }

@@ -1,0 +1,15 @@
+window.onerror = function (e) {
+    window.top.ERROR(e);
+    return true;
+};
+window.run = function () {
+    setInterval(function () {
+        var d = new Date();
+        window.top.INSTRUMENT({
+            type: 'instrument',
+            lineNumber: 3,
+            name: 'd',
+            value: d
+        });
+    }, 1000);
+};

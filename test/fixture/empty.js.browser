@@ -1,1 +1,6 @@
-window.onerror=function(e){window.top.ERROR(e);return true;};window.run=function(){};
+window.onerror = function (e) {
+    window.top.ERROR(e);
+    return true;
+};
+window.run = function () {
+};
