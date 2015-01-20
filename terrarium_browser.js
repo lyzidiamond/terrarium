@@ -1,5 +1,6 @@
 var instrument = require('./instrument');
 var EventEmitter = require('events').EventEmitter;
+var bundleDependencies = require('./bundle_dependencies.js');
 var util = require('util');
 
 function createObjectURL(blob) {
@@ -19,35 +20,51 @@ function Terrarium(options) {
   if (options && options.sandbox) {
     this.sandbox = options.sandbox;
   } else { this.sandbox = {}; }
+  if (options && options.browserify) this.browserify = true;
 }
 
 util.inherits(Terrarium, EventEmitter);
 
 Terrarium.prototype.run = function(source) {
+
   try {
-    var instrumented = instrument(source, this.name, 'browser');
-    var html = '<!DOCTYPE html><html><head></head><body>' +
-        '<script>window.onerror = function(e) { window.top.ERROR(e); }</script>' +
-        '<script>' +
-        instrumented.source + '</script></body></html>',
-      blob = new Blob([html], { encoding: 'UTF-8', type: 'text/html' }),
-      targetUrl = createObjectURL(blob);
 
-    this.setInstrument(this.name, instrumented);
 
-    this.iframe.addEventListener('load', function() {
-      try {
-        for (var k in this.sandbox) {
-          this.iframe.contentWindow[k] = this.sandbox[k];
+    var run = function(source) {
+      var instrumented = instrument(source, this.name, 'browser');
+      var html = '<!DOCTYPE html><html><head></head><body>' +
+          '<script>window.onerror = function(e) { window.top.ERROR(e); }</script>' +
+          '<script>' +
+          instrumented.source + '</script></body></html>',
+        blob = new Blob([html], { encoding: 'UTF-8', type: 'text/html' }),
+        targetUrl = createObjectURL(blob);
+
+      this.setInstrument(this.name, instrumented);
+
+      this.iframe.addEventListener('load', function() {
+        try {
+          for (var k in this.sandbox) {
+            this.iframe.contentWindow[k] = this.sandbox[k];
+          }
+          if (this.iframe.contentWindow.run) this.iframe.contentWindow.run();
+        } catch(e) {
+          this.emit('err', e);
+          this.emit('end');
         }
-        if (this.iframe.contentWindow.run) this.iframe.contentWindow.run();
-      } catch(e) {
-        this.emit('err', e);
-        this.emit('end');
-      }
-    }.bind(this));
+      }.bind(this));
 
-    this.iframe.src = targetUrl;
+      this.iframe.src = targetUrl;
+    }.bind(this);
+
+    if (this.browserify) {
+      bundleDependencies(source, function(err, bundled) {
+        if (err) console.error(err);
+        run(bundled);
+      });
+    } else {
+      run(source);
+    }
+
   } catch(e) {
     // the call to instrument() can throw a SyntaxError.
     this.emit('err', e);

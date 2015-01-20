@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "acorn": "^0.11.0",
+    "detective": "^4.0.0",
     "escodegen": "^1.4.3",
     "esprima": "^1.2.2",
     "smokestack": "^3.0.0",
