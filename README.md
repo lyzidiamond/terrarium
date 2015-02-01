@@ -80,3 +80,7 @@ t.destroy(); // shut down
 * **Why not eval()**: eval doesn't provide variable sandboxing, so it's easy to
   overwrite existing variables on your page. It also doesn't allow you to control
   timers.
+
+## See Also
+
+* [browser-module-sandbox](https://github.com/maxogden/browser-module-sandbox) is similar in it use of iframes, but focused more on UI experimentation.
