@@ -42,6 +42,22 @@ The options include:
 * `sandbox`: an object of JavaScript objects to be transferred into the running
   context.
 
+## Export Modes
+
+The `instrument` method that forms the core of Terrarium supports five formatting
+options:
+
+**instrumenting**:
+
+* `node`: use process.send for messages
+* `browser`: wrap in window.run, assign window.error, use `window.top` for messages
+
+**exporting**:
+
+* `node-export`: use `console.log` for messages
+* `browser-export`: use `console.log` for messages
+* `browser-export-fancy`: use `console.log` for messages and Mapbox for maps.
+
 ## Example
 
 ```js

@@ -1,0 +1,14 @@
+function _display(value) {
+    if (typeof value !== 'object' || !value.type || typeof L === 'undefined') {
+        return console.log(value);
+    }
+    var container = document.body.appendChild('div');
+    container.className = 'map';
+    L.mapbox.featureLayer(value).addTo(L.mapbox.map(container, 'tmcw.l12c66f2'));
+}
+var result = addTwoNumbers(10, 32);
+_display(result);
+setInterval(function () {
+    var d = new Date();
+    _display(d);
+}, 1000);

@@ -4,16 +4,26 @@ var test = require('tape'),
 
 function fixture(t, name) {
   var input = fs.readFileSync(__dirname + '/fixture/' + name + '.js');
-  var nodeOutput = instrument(input, 0, 'node');
-  var browserOutput = instrument(input, 0, 'browser');
-  var nodePath = __dirname + '/fixture/' + name + '.js.node';
-  var browserPath = __dirname + '/fixture/' + name + '.js.browser';
+
+  var modes = ['node', 'node-export', 'browser-export', 'browser', 'browser-export-fancy'];
+
+  var outputs = modes.map(function(mode) {
+    return instrument(input, 0, mode);
+  });
+
+  var paths = modes.map(function(mode) {
+    return __dirname + '/fixture/' + name + '.js.' + mode;
+  });
+
   if (process.env.UPDATE) {
-    fs.writeFileSync(nodePath, nodeOutput.source);
-    fs.writeFileSync(browserPath, browserOutput.source);
+    outputs.forEach(function(output, i) {
+      fs.writeFileSync(paths[i], output.source);
+    });
   }
-  t.equal(nodeOutput.source, fs.readFileSync(nodePath, 'utf8'), name + ' node');
-  t.equal(browserOutput.source, fs.readFileSync(browserPath, 'utf8'), name + ' browser');
+
+  outputs.forEach(function(output, i) {
+    t.equal(output.source, fs.readFileSync(paths[i], 'utf8'), name + ' ' + modes[i]);
+  });
 }
 
 test('instrument', function(t) {

@@ -1,5 +1,6 @@
 var esprima = require('esprima'),
   escodegen = require('escodegen'),
+  display = require('./display.js'),
   traverse = require('traverse');
 
 /**
@@ -12,10 +13,13 @@ var esprima = require('esprima'),
  * @param {string} type either browser or node
  * @returns {Object}
  */
-function instrument(str, tick, type) {
+function instrument(str, tick, type, options) {
   var TODO = [], parsed;
   try {
-    parsed = esprima.parse(str, {attachComment:true,loc:true});
+    parsed = esprima.parse(str, {
+      attachComment: true,
+      loc: true
+    });
   } catch(e) {
     // make esprima's errors zero-based
     e.lineNumber--;
@@ -124,6 +128,10 @@ function isInstrumentComment(comment) {
   return comment.value.indexOf('=') === 0;
 }
 
+/**
+ * Given a comment node in an AST, return an instrumentation function
+ * that emits its changes to the page.
+ */
 function instrumentCall(comment, type, tick) {
   var value = comment.value.replace(/^=/, '');
   var parsedComment = esprima.parse('a(' + value + ')').body[0].expression.arguments;
@@ -134,26 +142,67 @@ function instrumentCall(comment, type, tick) {
       "value": r ? v : { type: "Literal", value: v }
     };
   }
-  return {
-    "type": "ExpressionStatement",
-    "expression": {
-      "type": "CallExpression",
-      "callee": {
-        "type": "Identifier",
-        "name": type === 'node' ? 'process.send' : "window.top.INSTRUMENT"
-      },
-      "arguments": [{
-        "type": "ObjectExpression",
-        "properties": [
-          prop('type', 'instrument'),
-          prop('lineNumber', comment.loc.start.line),
-          prop('name', value),
-          prop('value', parsedComment[0], true)
-        ]
-      }]
-    }
-  };
+
+  // live-code instrumentation
+  if (type === 'browser' || type === 'node') {
+    return {
+      "type": "ExpressionStatement",
+      "expression": {
+        "type": "CallExpression",
+        "callee": {
+          "type": "Identifier",
+          "name": type === 'node' ? 'process.send' : "window.top.INSTRUMENT"
+        },
+        "arguments": [{
+          "type": "ObjectExpression",
+          "properties": [
+            prop('type', 'instrument'),
+            prop('lineNumber', comment.loc.start.line),
+            prop('name', value),
+            prop('value', parsedComment[0], true)
+          ]
+        }]
+      }
+    };
+  } else if (type === 'node-export') {
+    return {
+      "type": "ExpressionStatement",
+      "expression": {
+        "type": "CallExpression",
+        "callee": {
+          "type": "Identifier",
+          "name": 'console.log'
+        },
+        "arguments": [parsedComment[0]]
+      }
+    };
+  } else if (type === 'browser-export') {
+    return {
+      "type": "ExpressionStatement",
+      "expression": {
+        "type": "CallExpression",
+        "callee": {
+          "type": "Identifier",
+          "name": 'console.log'
+        },
+        "arguments": [parsedComment[0]]
+      }
+    };
+  } else if (type === 'browser-export-fancy') {
+    return {
+      "type": "ExpressionStatement",
+      "expression": {
+        "type": "CallExpression",
+        "callee": {
+          "type": "Identifier",
+          "name": '_display'
+        },
+        "arguments": [parsedComment[0]]
+      }
+    };
+  }
 }
+
 function pairs(o) { return Object.keys(o).map(function(k) { return [k, o[k]]; }); }
 function values(o) { return pairs(o).map(function(k) { return k[1]; }); }
 
@@ -231,39 +280,52 @@ function transform(code, type, tick, TODO) {
  * @return {Object} AST
  */
 function wrapInRun(code, type, tick) {
-  return type === 'node' ? code : {
-    "type": "Program",
-    "body": [setErrorHandler(), {
-      "type": "ExpressionStatement",
-      "expression": {
-        "type": "AssignmentExpression",
-        "operator": "=",
-        "left": {
-          "type": "MemberExpression",
-          "computed": false,
-          "object": {
-            "type": "Identifier",
-            "name": "window"
+  if (type === 'node') {
+    return code;
+  } else if (type === 'node-export') {
+    return code;
+  } else if (type === 'browser-export') {
+    return code;
+  } else if (type === 'browser-export-fancy') {
+    return {
+      "type": "Program",
+      "body": [display(), code]
+    };
+  } else if (type === 'browser') {
+    return {
+      "type": "Program",
+      "body": [setErrorHandler(), {
+        "type": "ExpressionStatement",
+        "expression": {
+          "type": "AssignmentExpression",
+          "operator": "=",
+          "left": {
+            "type": "MemberExpression",
+            "computed": false,
+            "object": {
+              "type": "Identifier",
+              "name": "window"
+            },
+            "property": {
+              "type": "Identifier",
+              "name": "run"
+            }
           },
-          "property": {
-            "type": "Identifier",
-            "name": "run"
+          "right": {
+            "type": "FunctionExpression",
+            "params": [],
+            "defaults": [],
+            "body": {
+              "type": "BlockStatement",
+              "body": code.body
+            },
+            "generator": false,
+            "expression": false
           }
-        },
-        "right": {
-          "type": "FunctionExpression",
-          "params": [],
-          "defaults": [],
-          "body": {
-            "type": "BlockStatement",
-            "body": code.body
-          },
-          "generator": false,
-          "expression": false
         }
-      }
-    }]
-  };
+      }]
+    };
+  }
 }
 
 module.exports = instrument;

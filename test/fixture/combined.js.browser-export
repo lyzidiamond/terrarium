@@ -1,0 +1,6 @@
+var result = addTwoNumbers(10, 32);
+console.log(result);
+setInterval(function () {
+    var d = new Date();
+    console.log(d);
+}, 1000);
